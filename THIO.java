@@ -44,25 +44,32 @@ public class THIO {
 
             case IDENTIFY: 
                     thioMessage = stateIDENTIFY(userMessage);
+                    state = LIVEBOX;
                     break;
 
             case LIVEBOX: 
                     thioMessage = stateLIVEBOX(userMessage);;
+                    if (userMessage.toLowerCase().equals("live")){
+                        state = LIVEIDENTIFY;
+                    }
+                    else if (userMessage.toLowerCase().equals("box")){
+                         state = BOXIDENTIFY;
+                    }
                     break;
 
             case LIVEIDENTIFY: 
-                    thioMessage = stateBEGINTHIO();
-                    state = IDENTIFY;
+                    thioMessage = stateLIVEIDENTIFY();
+                    state = LIVEINTERACT;
                     break;
             case BOXIDENTIFY: 
-                    thioMessage = stateBEGINTHIO();
-                    state = IDENTIFY;
+                    thioMessage = stateBOXINTERACT();
+                    state = BOXINTERACT;
                     break;
-            case LIVEINTERACT: thioMessage = stateBEGINTHIO();
-                    state = IDENTIFY;
+            case LIVEINTERACT: thioMessage = stateLIVEINTERACT();
+                    state = LIVEINTERACT;
                     break;
-            case BOXINTERACT: thioMessage = stateBEGINTHIO();
-                    state = IDENTIFY;
+            case BOXINTERACT: thioMessage = stateBOXINTERACT();
+                    state = BOXINTERACT;
                     break;
 
             case CLOSING: thioMessage = stateCLOSING();
@@ -100,11 +107,9 @@ public class THIO {
     String stateLIVEBOX(String userMessage) {
         String message = "";
         if (userMessage.toLowerCase().equals("live")){
-            state = LIVEIDENTIFY;
             message = "Please choose a Live User to connect to.";
         }
         else if (userMessage.toLowerCase().equals("box")){
-            state = BOXIDENTIFY;
             message = "Please choose a Box to connect to.";
         }
         else {

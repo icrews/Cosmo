@@ -20,17 +20,17 @@ public class NCHAN {
             BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
         ) {
             System.out.println("<ESTABLISHED>");
-            String inputLine, outputLine;
+            String inputLine, output;
 
             // Initiate conversation with single client
             THIO thio = new THIO(clientSocket.getInetAddress().toString(), clientSocket.getPort());
-            outputLine = thio.processInput(null);
-            out.println(outputLine);
+            output = thio.processInput(null);
+            out.print(output + "\n");
 
             while ((inputLine = in.readLine()) != null) {
-                outputLine = thio.processInput(inputLine);
-                out.println(outputLine);
-                if (outputLine.equals("<CLOSE>")){
+                output = thio.processInput(inputLine);
+                out.print(output + "\n");
+                if (output.equals("<CLOSE>")){
                     break;
                 }
             }

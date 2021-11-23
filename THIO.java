@@ -75,7 +75,7 @@ public class THIO {
     }
 
     String stateBEGINTHIO() {
-        String message = "Welcome, user! I am THIO and I will be helping you today.\nYou may cease this connection at any time by saying END.\nPlease Identify Yourself.";
+        String message = "Welcome, user! I am THIO and I will be helping you today. You may cease this connection at any time by saying END. Please Identify Yourself.";
         return message;
     }
 

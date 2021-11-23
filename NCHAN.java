@@ -25,11 +25,11 @@ public class NCHAN {
             // Initiate conversation with single client
             THIO thio = new THIO(clientSocket.getInetAddress().toString(), clientSocket.getPort());
             output = thio.processInput(null);
-            out.print(output + "\n");
+            out.println(output);
 
             while ((inputLine = in.readLine()) != null) {
                 output = thio.processInput(inputLine);
-                out.print(output + "\n");
+                out.println(output);
                 if (output.equals("<CLOSE>")){
                     break;
                 }

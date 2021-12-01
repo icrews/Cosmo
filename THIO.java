@@ -1,6 +1,7 @@
 package Cosmo;
 
 import java.io.*;
+import java.util.*;
 
 public class THIO {
     private static final int BEGINTHIO = 0;
@@ -55,6 +56,9 @@ public class THIO {
                     else if (userMessage.toLowerCase().equals("box")){
                          state = BOXIDENTIFY;
                     }
+                    else {
+                        state = LIVEBOX;
+                    }
                     break;
 
             case LIVEIDENTIFY: 
@@ -62,13 +66,13 @@ public class THIO {
                     state = LIVEINTERACT;
                     break;
             case BOXIDENTIFY: 
-                    thioMessage = stateBOXINTERACT();
+                    thioMessage = stateBOXIDENTIFY();
                     state = BOXINTERACT;
                     break;
             case LIVEINTERACT: thioMessage = stateLIVEINTERACT();
                     state = LIVEINTERACT;
                     break;
-            case BOXINTERACT: thioMessage = stateBOXINTERACT();
+            case BOXINTERACT: thioMessage = stateBOXINTERACT(userMessage);
                     state = BOXINTERACT;
                     break;
 
@@ -82,25 +86,41 @@ public class THIO {
     }
 
     String stateBEGINTHIO() {
-        String message = "Welcome, user! I am THIO and I will be helping you today.\nYou may cease this connection at any time by saying END.\nPlease Identify Yourself.";
+        String message = "Welcome, user! I am THIO and I will be helping you today. You may cease this connection at any time by saying END. Please Identify Yourself.";
         return message;
     }
 
     String stateIDENTIFY(String userMessage) {
-        String userEntry = "";
-        userEntry += userMessage + "," + connectedAddress + "," + connectedPort;
+        String tableEntry = "";
+        tableEntry += userMessage + "," + connectedAddress + "," + connectedPort;
 
+        boolean userExists = false;
+        Scanner scanner = new Scanner("users.csv");
+        while (scanner.hasNext()){
+            if (scanner.next().equals(userMessage)){
+                userExists = true;
+            }
+        }
+       
+
+        if (userExists = false){
+            addUser(tableEntry);
+        }
+
+        scanner.close();
+        String message = "Created User " + userMessage +". Would you like to use LIVE chat or BOX chat? [Live|Box]";
+        return message;
+    }
+
+    void addUser(String tableEntry){
         try {
-            PrintWriter writeToTable = new PrintWriter("users.csv");
-            writeToTable.println(userEntry);
+            PrintWriter writeToTable = new PrintWriter("COSMO/users.csv");
+            writeToTable.println(tableEntry);
             writeToTable.close();
         } catch (FileNotFoundException e){
             System.err.println("Users Table: users.csv,  not found");
             System.exit(1);
         }
-
-        String message = "Created User " + userMessage +". Would you like to use LIVE chat or BOX chat? [Live|Box]";
-        return message;
     }
 
 
@@ -110,10 +130,10 @@ public class THIO {
             message = "Please choose a Live User to connect to.";
         }
         else if (userMessage.toLowerCase().equals("box")){
-            message = "Please choose a Box to connect to.";
+            message = "Connecting to the Box.";
         }
         else {
-
+            message = "Please choose either Live or Box!";
         }
         return message;
     }
@@ -124,15 +144,79 @@ public class THIO {
     }
 
     String stateBOXIDENTIFY() {
-        return stateCLOSING(); //filler
+        String message = "";
+        Scanner boxScan = new Scanner("COSMO/box.csv");
+        String boxMessageLine = "";
+        String boxMessageID = "";
+        int parsedID = 0;
+        int highestID = 0;
+        
+        while (boxScan.hasNextLine()){
+            boxMessageLine = boxScan.nextLine();
+            int firstComma = boxMessageLine.indexOf(",");
+            boxMessageID = boxMessageLine.substring(0, firstComma);
+            parsedID = Integer.parseInt(boxMessageID);
+
+            if (parsedID > highestID){
+                highestID = parsedID;
+            }
+        }
+
+
+        if (highestID > 10){
+            for (int i = highestID-10; i <= highestID; ++i){
+                while (boxScan.hasNextLine()){
+                    boxMessageLine = boxScan.nextLine();
+                    int firstComma = boxMessageLine.indexOf(",");
+                    boxMessageID = boxMessageLine.substring(0, firstComma);
+                    parsedID = Integer.parseInt(boxMessageID);
+
+                    if (parsedID == i){
+                        message += boxMessageLine;
+                    }
+                }
+            }
+        }
+        else {
+            while (boxScan.hasNextLine()){
+                message += boxScan.nextLine();
+            }
+        }
+        
+        message += "\n-------END OF CONVERSATION-------\n";
+        message += "\nPlease Add a Message:\n";
+
+        boxScan.close();
+
+        return message;
     }
 
     String stateLIVEINTERACT() {
         return stateCLOSING(); //filler
     }
 
-    String stateBOXINTERACT() {
-        return stateCLOSING(); //filler
+    String stateBOXINTERACT(String userMessage) {
+        String tableEntry = "";
+        String message = "";
+        tableEntry += "0,";
+        tableEntry += this.connectedAddress + ",";
+        tableEntry += "'" + userMessage + "'";
+
+        addMessage(tableEntry);
+
+        message += tableEntry;
+        return message; //filler
+    }
+
+    void addMessage(String tableEntry){
+        try {
+            PrintWriter writeToTable = new PrintWriter("COSMO/box.csv");
+            writeToTable.println(tableEntry);
+            writeToTable.close();
+        } catch (FileNotFoundException e){
+            System.err.println("Users Table: users.csv,  not found");
+            System.exit(1);
+        }
     }
 
     String stateCLOSING() {

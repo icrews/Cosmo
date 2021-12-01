@@ -12,13 +12,25 @@ public class NCHAN {
         } 
 
         int portNumber = Integer.parseInt(args[0]);
-
-        try (
-            ServerSocket serverSocket = new ServerSocket(portNumber);
-            Socket clientSocket = serverSocket.accept();
-            PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-        ) {
+        int connectionCount = 0;
+// this needs to be done in a loop as it will allow it to accept multiple connections that it hears, right now stops listening after 1 connection is established
+// it also exits once that connection is closed
+// ThreadedKnockKnock it creates a new thread on lines 26-28 that allows it stores the connection and work while still looking for other connections
+// .start() begin to run code from KnockKnockRunnable look there to create the protocol that runs on each thread
+        while(true){
+            try (
+                ServerSocket serverSocket = new ServerSocket(portNumber);
+                Socket clientSocket = serverSocket.accept();
+                System.out.println("Connection accepted: " + connectionCount);
+                new Thread(
+                    new NCHANRunnable(clientSocket)
+                    ).start();
+                    connectionCount++;
+                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+                BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            )
+        }
+     {
             System.out.println("<ESTABLISHED>");
             String inputLine, outputLine;
 

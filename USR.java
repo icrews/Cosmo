@@ -1,5 +1,3 @@
-package Cosmo;
-
 import java.io.*;
 import java.net.*;
 

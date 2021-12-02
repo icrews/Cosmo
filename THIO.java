@@ -1,5 +1,3 @@
-package Cosmo;
-
 import java.io.*;
 import java.util.*;
 
@@ -8,10 +6,11 @@ public class THIO {
     private static final int IDENTIFY = 1;
     private static final int LIVEBOX = 2;
     private static final int LIVEIDENTIFY = 3;
-    private static final int BOXIDENTIFY = 4;
+    private static final int BOXSTATUS = 4;
     private static final int LIVEINTERACT = 5;
-    private static final int BOXINTERACT = 6;
-    private static final int CLOSING = 7;
+    private static final int BOXOPEN = 6;
+    private static final int BOXINTERACT = 7;
+    private static final int CLOSING = 8;
 
     private int state = BEGINTHIO;
 
@@ -19,7 +18,16 @@ public class THIO {
     private String connectedAddress;
     private int connectedPort;
 
+    private ArrayList<BOX> boxes = new ArrayList<BOX>();
+    
+    static UserList knownUsers;
+    static UserList knownLive;
+
+    private BOX openBox;
+    
+    
     public THIO() {
+
     }
 
     public THIO(String connectedAddress, int connectedPort) {
@@ -35,8 +43,6 @@ public class THIO {
                 state = CLOSING;
             }
         }
-        
-
         switch (state) {
             case BEGINTHIO: 
                     thioMessage = stateBEGINTHIO();
@@ -54,7 +60,7 @@ public class THIO {
                         state = LIVEIDENTIFY;
                     }
                     else if (userMessage.toLowerCase().equals("box")){
-                         state = BOXIDENTIFY;
+                         state = BOXSTATUS;
                     }
                     else {
                         state = LIVEBOX;
@@ -65,17 +71,21 @@ public class THIO {
                     thioMessage = stateLIVEIDENTIFY();
                     state = LIVEINTERACT;
                     break;
-            case BOXIDENTIFY: 
-                    thioMessage = stateBOXIDENTIFY();
-                    state = BOXINTERACT;
+            case BOXSTATUS: 
+                    thioMessage = stateBOXSTATUS();
+                    state = BOXOPEN;
                     break;
             case LIVEINTERACT: thioMessage = stateLIVEINTERACT();
                     state = LIVEINTERACT;
                     break;
-            case BOXINTERACT: thioMessage = stateBOXINTERACT(userMessage);
+            case BOXOPEN: 
+                    thioMessage = stateBOXOPEN(userMessage);
+                    state = BOXINTERACT;
+                    break; 
+            case BOXINTERACT: 
+                    thioMessage = stateBOXINTERACT(userMessage);
                     state = BOXINTERACT;
                     break;
-
             case CLOSING: thioMessage = stateCLOSING();
                     break;
 
@@ -91,36 +101,22 @@ public class THIO {
     }
 
     String stateIDENTIFY(String userMessage) {
-        String tableEntry = "";
-        tableEntry += userMessage + "," + connectedAddress + "," + connectedPort;
-
-        boolean userExists = false;
-        Scanner scanner = new Scanner("users.csv");
-        while (scanner.hasNext()){
-            if (scanner.next().equals(userMessage)){
-                userExists = true;
-            }
-        }
+        String message = "";
+        User user = new User(userMessage);
+        boolean userExists = knownUsers.contains(user);
        
 
-        if (userExists = false){
-            addUser(tableEntry);
+        if (userExists == false){
+            knownUsers.addUser(user);
+            message += "Created new User [" + user.toString() + "]. ";
+        }
+        else {
+            message += "User found: " + user.toString() + ". ";
         }
 
-        scanner.close();
-        String message = "Created User " + userMessage +". Would you like to use LIVE chat or BOX chat? [Live|Box]";
+
+        message += "Would you like to use LIVE chat or BOX chat? [Live|Box]";
         return message;
-    }
-
-    void addUser(String tableEntry){
-        try {
-            PrintWriter writeToTable = new PrintWriter("COSMO/users.csv");
-            writeToTable.println(tableEntry);
-            writeToTable.close();
-        } catch (FileNotFoundException e){
-            System.err.println("Users Table: users.csv,  not found");
-            System.exit(1);
-        }
     }
 
 
@@ -130,7 +126,7 @@ public class THIO {
             message = "Please choose a Live User to connect to.";
         }
         else if (userMessage.toLowerCase().equals("box")){
-            message = "Connecting to the Box.";
+            message = "Currently open BOXes: [Press Enter]";
         }
         else {
             message = "Please choose either Live or Box!";
@@ -143,51 +139,20 @@ public class THIO {
 
     }
 
-    String stateBOXIDENTIFY() {
+    String stateBOXSTATUS() {
         String message = "";
-        Scanner boxScan = new Scanner("COSMO/box.csv");
-        String boxMessageLine = "";
-        String boxMessageID = "";
-        int parsedID = 0;
-        int highestID = 0;
-        
-        while (boxScan.hasNextLine()){
-            boxMessageLine = boxScan.nextLine();
-            int firstComma = boxMessageLine.indexOf(",");
-            boxMessageID = boxMessageLine.substring(0, firstComma);
-            parsedID = Integer.parseInt(boxMessageID);
-
-            if (parsedID > highestID){
-                highestID = parsedID;
-            }
-        }
-
-
-        if (highestID > 10){
-            for (int i = highestID-10; i <= highestID; ++i){
-                while (boxScan.hasNextLine()){
-                    boxMessageLine = boxScan.nextLine();
-                    int firstComma = boxMessageLine.indexOf(",");
-                    boxMessageID = boxMessageLine.substring(0, firstComma);
-                    parsedID = Integer.parseInt(boxMessageID);
-
-                    if (parsedID == i){
-                        message += boxMessageLine;
-                    }
-                }
-            }
+        if (boxes.isEmpty()){
+            message += "No open BOXes. ";
+            message += "Please choose the name for your first BOX:";
         }
         else {
-            while (boxScan.hasNextLine()){
-                message += boxScan.nextLine();
+            for (BOX box : boxes){
+                message += box.getName() + ", ";
             }
+            message += ". Please choose one of these BOXes to display. You can also type a name not shown to create a new BOX.";
+
+            
         }
-        
-        message += "\n-------END OF CONVERSATION-------\n";
-        message += "\nPlease Add a Message:\n";
-
-        boxScan.close();
-
         return message;
     }
 
@@ -195,33 +160,70 @@ public class THIO {
         return stateCLOSING(); //filler
     }
 
-    String stateBOXINTERACT(String userMessage) {
-        String tableEntry = "";
+   
+    String stateBOXOPEN(String userMessage) {
         String message = "";
-        tableEntry += "0,";
-        tableEntry += this.connectedAddress + ",";
-        tableEntry += "'" + userMessage + "'";
-
-        addMessage(tableEntry);
-
-        message += tableEntry;
-        return message; //filler
-    }
-
-    void addMessage(String tableEntry){
-        try {
-            PrintWriter writeToTable = new PrintWriter("COSMO/box.csv");
-            writeToTable.println(tableEntry);
-            writeToTable.close();
-        } catch (FileNotFoundException e){
-            System.err.println("Users Table: users.csv,  not found");
-            System.exit(1);
+        for (BOX box : this.getBoxes()){
+            String currentName = box.getName();
+            if (currentName.toLowerCase().equals(userMessage.toLowerCase())){
+                openBox = box;
+            }
         }
+        if (openBox == null){
+            BOX newBox = new BOX(userMessage);
+            boxes.add(newBox);
+            message += "<CREATING NEW BOX: " + userMessage + ">";
+            openBox = newBox;
+        }
+
+        message += "<PRINTING BOX CONTENTS>";
+        message += openBox.toString();
+        message += "<END OF BOX CONTENTS>";
+
+        message += "Add entry to " + openBox.getName() + ":";
+        
+
+        return message;
+
     }
+
+    String stateBOXINTERACT(String userMessage){
+        String message = "";
+
+        openBox.addEntry(userMessage);
+
+        message += "<PRINTING BOX CONTENTS>";
+        message += openBox.toString();
+        message += "<END OF BOX CONTENTS>";
+        message += "Add entry to " + openBox.getName() + ":";
+        return message;
+    }
+
 
     String stateCLOSING() {
         String message = "<CLOSE>";
         return message;
+    }
+
+    
+    public ArrayList<BOX> getBoxes() {
+        return boxes;
+    }
+
+    public static UserList getKnownUsers() {
+        return knownUsers;
+    }
+
+    public static void setKnownUsers(UserList usersKnown) {
+        THIO.knownUsers = usersKnown;
+    }
+
+    public static UserList getKnownLive() {
+        return knownLive;
+    }
+
+    public static void setKnownLive(UserList liveKnown) {
+        THIO.knownLive = liveKnown;
     }
 
 }
